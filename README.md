@@ -1,0 +1,2 @@
+# PushFlow
+android推流和本地mediamuxer合成音视频解决方案（本地采用Camera+AudioRecord实现视频和声音采集，用librtmp库实现推流）
