@@ -1,11 +1,12 @@
 package com.demo.pushflow;
 
-import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
+import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
@@ -14,13 +15,13 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.demo.pushflow.entity.RTMPPackage;
-import com.demo.pushflow.util.AACEncoder;
 import com.demo.pushflow.util.AACEncoder3;
-import com.demo.pushflow.util.AVCEncoder;
 import com.demo.pushflow.util.AVCEncoder3;
-import com.demo.pushflow.util.Mp4Muxer;
 import com.demo.pushflow.util.PermissionUtils;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -28,6 +29,7 @@ public class MainActivity3 extends AppCompatActivity implements View.OnClickList
     private Camera camera;
     private Button startlive;
     private Button stoplive;
+    private Button pullflow;
     private TextureView tureview;
 
     private AACEncoder3 aacEncoder3;
@@ -36,7 +38,8 @@ public class MainActivity3 extends AppCompatActivity implements View.OnClickList
 
     private long startVideoTime, startAudioTime;
 
-    private String url = "rtmp://sendtc3.douyu.com/live/4375298rkPm2TJxg?wsSecret=bf741e6c7ea5552fac796ab959c1df95&wsTime=606a7f69&wsSeek=off&wm=0&tw=0&roirecognition=0&record=flv&origin=tct";
+    //private String url = "rtmp://sendtc3.douyu.com/live/4375298rsIyZjaUt?wsSecret=e14d3a1a21d0e1793f8f0dd9c0e8ae0f&wsTime=606afdd9&wsSeek=off&wm=0&tw=0&roirecognition=0&record=flv&origin=tct";
+    private String url = "rtmp://192.168.123.196/live/livestrea2";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,11 +54,13 @@ public class MainActivity3 extends AppCompatActivity implements View.OnClickList
     private void initView() {
         startlive = (Button) findViewById(R.id.startlive);
         stoplive = (Button) findViewById(R.id.stoplive);
+        pullflow = (Button) findViewById(R.id.pullflow);
         tureview = (TextureView) findViewById(R.id.tureview);
 
         tureview.setSurfaceTextureListener(this);
         startlive.setOnClickListener(this);
         stoplive.setOnClickListener(this);
+        pullflow.setOnClickListener(this);
     }
 
 
@@ -68,8 +73,44 @@ public class MainActivity3 extends AppCompatActivity implements View.OnClickList
             case R.id.stoplive:
                 stopRecoding();
                 break;
+            case R.id.pullflow:
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        while (true){
+                            try {
+                                tt(cameraLive.readData());
+                                Thread.sleep(25);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }).start();
+                break;
         }
     }
+
+    private void tt(byte[] content) {
+        try {
+            byte[] mp3SoundByteArray = Base64.decode(content, Base64.DEFAULT);// 将字符串转换为byte数组
+            File tempMp3 = File.createTempFile("badao", ".mp3");
+            tempMp3.deleteOnExit();
+            FileOutputStream fos = new FileOutputStream(tempMp3);
+            fos.write(mp3SoundByteArray);
+            fos.close();
+            MediaPlayer mediaPlayer = new MediaPlayer();
+            FileInputStream fis = new FileInputStream(tempMp3);
+            mediaPlayer.setDataSource(fis.getFD());
+
+            mediaPlayer.prepare();
+            mediaPlayer.start();
+        } catch (IOException ex) {
+            String s = ex.toString();
+            ex.printStackTrace();
+        }
+    }
+
 
     private void stopRecoding() {
         aacEncoder3.stop();

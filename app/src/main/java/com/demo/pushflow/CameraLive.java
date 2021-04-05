@@ -51,11 +51,13 @@ public class CameraLive extends Thread {
     }
 
     //连接RTMP服务器
-    private native boolean connect(String url);
+    public native boolean connect(String url);
 
     //发送RTMP Data
-    private native boolean sendData(byte[] data, int len, long tms, int type);
+    public native boolean sendData(byte[] data, int len, long tms, int type);
 
     //连接RTMP服务器
     public native boolean disconnect();
+
+    public native byte[] readData();
 }

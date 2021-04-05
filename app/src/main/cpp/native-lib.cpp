@@ -2,6 +2,7 @@
 #include <string>
 #include <android/log.h>
 #include <malloc.h>
+#include "librtmp/log.h"
 
 extern "C" {
 #include "librtmp/rtmp.h"
@@ -15,6 +16,8 @@ typedef struct {
     RTMP *rtmp;
 } Live;
 Live *live = nullptr;
+
+RTMP *rtmp_read = 0;
 
 int sendPacket(RTMPPacket *packet) {
     int r = RTMP_SendPacket(live->rtmp, packet, 1);
@@ -63,7 +66,6 @@ RTMPPacket *createVideoPackage(int8_t *buf, int len, const long tms, Live *live)
     packet->m_body[0] = 0x27;
     if (buf[0] == 0x65) { //关键帧
         packet->m_body[0] = 0x17;
-        LOGI("发送关键帧 data");
     }
     packet->m_body[1] = 0x01;
     packet->m_body[2] = 0x00;
@@ -136,8 +138,6 @@ RTMPPacket *createVideoPackage(Live *live) {
 
 int sendVideo(int8_t *buf, int len, long tms) {
     int ret;
-    LOGI("sendVideo %d", buf[4]);
-    LOGI("sendVideo2 %d", (buf[4] & 0x1F));
     //buf[4] == 0x67
     if ((buf[4] & 0x1F) == 7) {//sps pps
         if (live && (!live->pps || !live->sps)) {
@@ -210,7 +210,7 @@ Java_com_demo_pushflow_CameraLive_connect(JNIEnv *env, jobject thiz, jstring url
         memset(live, 0, sizeof(Live));
         live->rtmp = RTMP_Alloc();// Rtmp 申请内存
         RTMP_Init(live->rtmp);
-        live->rtmp->Link.timeout = 10;// 设置 rtmp 初始化参数，比如超时时间、url
+        live->rtmp->Link.timeout = 30;// 设置 rtmp 初始化参数，比如超时时间、url
         LOGI("connect %s", url);
         if (!(ret = RTMP_SetupURL(live->rtmp, (char *) url))) break;
         RTMP_EnableWrite(live->rtmp);// 开启 Rtmp 写入
@@ -238,7 +238,7 @@ Java_com_demo_pushflow_CameraLive_sendData(JNIEnv *env, jobject thiz, jbyteArray
     jbyte *data = env->GetByteArrayElements(data_, NULL);
     switch (type) {
         case 0: //video
-            LOGI("send video  lenght :%d", len);
+            //LOGI("send video  lenght :%d", len);
             ret = sendVideo(data, len, tms);
             break;
         default: //audio
@@ -266,9 +266,55 @@ Java_com_demo_pushflow_CameraLive_disconnect(JNIEnv *env, jobject thiz) {
         }
         free(live);
         live = 0;
+        if (rtmp_read){
+            RTMP_Close(rtmp_read);
+            RTMP_Free(rtmp_read);
+        }
     }
 }
 
+
+extern "C"
+JNIEXPORT jbyteArray JNICALL
+Java_com_demo_pushflow_CameraLive_readData(JNIEnv *env, jobject thiz) {
+    if (!rtmp_read){
+        rtmp_read=RTMP_Alloc();
+        RTMP_Init(rtmp_read);
+        //set connection timeout,default 30s
+        rtmp_read->Link.timeout=10;
+        // HKS's live URL
+        if(!RTMP_SetupURL(rtmp_read,"rtmp://192.168.123.196/live/livestrea2")){
+            RTMP_Log(RTMP_LOGERROR,"SetupURL Err\n");
+            RTMP_Free(rtmp_read);
+        }
+        //1hour
+        RTMP_SetBufferMS(rtmp_read, 3600*1000);
+        if(!RTMP_Connect(rtmp_read,NULL)){
+            RTMP_Log(RTMP_LOGERROR,"Connect Err\n");
+            RTMP_Free(rtmp_read);
+        }
+        if(!RTMP_ConnectStream(rtmp_read,0)){
+            RTMP_Log(RTMP_LOGERROR,"ConnectStream Err\n");
+            RTMP_Close(rtmp_read);
+            RTMP_Free(rtmp_read);
+        }
+    }
+
+    int nRead=0;
+    int bufsize=1024*1024;
+    char* buf=(char*)malloc(bufsize);
+    memset(buf,0,bufsize);
+    nRead=RTMP_Read(rtmp_read,buf,bufsize);
+    LOGI("bufsize : %d",bufsize);
+    char arr[bufsize];
+    strcpy(arr, buf);
+    memcpy(arr, buf, sizeof(arr));
+
+    jbyteArray byteArray = env->NewByteArray(bufsize);
+    env->SetByteArrayRegion(byteArray, 0, bufsize, (jbyte *) arr);
+
+    return byteArray;
+}
 
 extern "C"
 JNIEXPORT jboolean JNICALL

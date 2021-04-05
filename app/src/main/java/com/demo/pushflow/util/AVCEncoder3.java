@@ -117,6 +117,7 @@ public class AVCEncoder3 implements Runnable {
                 ByteBuffer encodedData = VideomediaCodec.getOutputBuffer(encoderStatus);
                 byte[] outData = new byte[bufferInfo.size];
                 encodedData.get(outData);
+
                 VideomediaCodec.releaseOutputBuffer(encoderStatus, false);
                 if (videoEnncoderListener != null) {
                     videoEnncoderListener.getVideoBuffer(VideomediaCodec, encoderStatus, encodedData, bufferInfo, outData);
