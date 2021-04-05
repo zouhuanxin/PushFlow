@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextureView
+        android:id="@+id/tureview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    </TextureView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <Button
+            android:id="@+id/startlive"
+            android:text="开始直播"
+            android:layout_margin="20dp"
+            android:layout_width="match_parent"
+            android:layout_height="60dp">
+        </Button>
+
+        <Button
+            android:id="@+id/stoplive"
+            android:text="停止直播"
+            android:layout_margin="20dp"
+            android:layout_width="match_parent"
+            android:layout_height="60dp">
+        </Button>
+    </LinearLayout>
+
+</FrameLayout>
