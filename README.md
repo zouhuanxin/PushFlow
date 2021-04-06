@@ -1,7 +1,7 @@
 # PushFlow
 android推流和本地mediamuxer合成音视频解决方案（本地采用Camera+AudioRecord实现视频和声音采集，用librtmp库实现推流）
 
-(https://github.com/gongluck/AnalysisAVP)[H264 AVC相关音视频资料]
+[H264 AVC相关音视频资料](https://github.com/gongluck/AnalysisAVP)
 
 ## 正文
 
